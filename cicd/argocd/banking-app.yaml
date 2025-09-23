@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: banking-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MouradOuammou/banking-infrastructure.git
+    targetRevision: HEAD
+    path: infrastructure/kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: banking
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: banking-project
+  namespace: argocd
+spec:
+  description: "Infrastructure Bancaire Project"
+  sourceRepos:
+    - 'https://github.com/MouradOuammou/banking-infrastructure.git'
+  destinations:
+    - namespace: banking
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+    - namespace: database
+      server: https://kubernetes.default.svc
+    - namespace: kafka
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRole
+    - group: 'rbac.authorization.k8s.io'
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: 'apps'
+      kind: Deployment
+    - group: 'apps'
+      kind: StatefulSet
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: 'networking.k8s.io'
+      kind: Ingress
+    - group: 'networking.k8s.io'
+      kind: NetworkPolicy
+    - group: 'policy'
+      kind: PodDisruptionBudget
+  roles:
+    - name: banking-admin
+      description: "Banking Admin Role"
+      policies:
+        - p, proj:banking-project:banking-admin, applications, *, banking-project/*, allow
+        - p, proj:banking-project:banking-admin, repositories, *, *, allow
+      groups:
+        - banking-admins
+    - name: banking-developer
+      description: "Banking Developer Role"
+      policies:
+        - p, proj:banking-project:banking-developer, applications, get, banking-project/*, allow
+        - p, proj:banking-project:banking-developer, applications, sync, banking-project/*, allow
+      groups:
+        - banking-developers

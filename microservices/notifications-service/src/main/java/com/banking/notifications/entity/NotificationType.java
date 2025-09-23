@@ -1,0 +1,17 @@
+package com.banking.notifications.entity;
+
+public enum NotificationType {
+    ACCOUNT_CREATED,
+    TRANSACTION_COMPLETED,
+    TRANSACTION_FAILED,
+    BALANCE_LOW,
+    BALANCE_UPDATED,
+    LOGIN_ALERT,
+    PASSWORD_RESET,
+    ACCOUNT_LOCKED,
+    PAYMENT_REMINDER,
+    STATEMENT_READY,
+    SECURITY_ALERT,
+    PROMOTIONAL,
+    SYSTEM_MAINTENANCE
+}

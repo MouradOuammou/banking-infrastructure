@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: angular-ui
+  namespace: banking
+  labels:
+    app: angular-ui
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: angular-ui
+  template:
+    metadata:
+      labels:
+        app: angular-ui
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4200"
+        prometheus.io/path: "/health"
+    spec:
+      containers:
+      - name: angular-ui
+        image: angular-ui:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 4200
+          name: http
+        env:
+        - name: API_BASE_URL
+          value: "http://api-gateway-service:8080"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 4200
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 4200
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: angular-ui
+  namespace: banking
+  labels:
+    app: angular-ui
+spec:
+  selector:
+    app: angular-ui
+  ports:
+  - port: 4200
+    targetPort: 4200
+    name: http
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: angular-ui-ingress
+  namespace: banking
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: banking.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: angular-ui
+            port:
+              number: 4200

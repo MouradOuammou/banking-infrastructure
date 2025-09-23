@@ -1,0 +1,228 @@
+# Tests de chaos pour l'Infrastructure Bancaire avec Litmus
+
+# Expérience 1: Pod Failure
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-pod-failure
+  namespace: banking
+spec:
+  appinfo:
+    appns: banking
+    applabel: app=banking-services
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-delete
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '60'
+        - name: CHAOS_INTERVAL
+          value: '10'
+        - name: FORCE
+          value: 'false'
+        - name: PODS_AFFECTED_PERC
+          value: '50'
+
+---
+# Expérience 2: Network Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-network-chaos
+  namespace: banking
+spec:
+  appinfo:
+    appns: banking
+    applabel: app=banking-services
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-network-latency
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '120'
+        - name: NETWORK_INTERFACE
+          value: 'eth0'
+        - name: NETWORK_LATENCY
+          value: '2000'
+        - name: JITTER
+          value: '100'
+        - name: CONTAINER_RUNTIME
+          value: 'docker'
+        - name: SOCKET_PATH
+          value: '/var/run/docker.sock'
+
+---
+# Expérience 3: CPU Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-cpu-chaos
+  namespace: banking
+spec:
+  appinfo:
+    appns: banking
+    applabel: app=banking-services
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-cpu-hog
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '60'
+        - name: CPU_CORES
+          value: '1'
+        - name: TARGET_CONTAINER
+          value: ''
+
+---
+# Expérience 4: Memory Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-memory-chaos
+  namespace: banking
+spec:
+  appinfo:
+    appns: banking
+    applabel: app=banking-services
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-memory-hog
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '60'
+        - name: MEMORY_CONSUMPTION
+          value: '500'
+        - name: TARGET_CONTAINER
+          value: ''
+
+---
+# Expérience 5: Disk Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-disk-chaos
+  namespace: banking
+spec:
+  appinfo:
+    appns: banking
+    applabel: app=banking-services
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-disk-fill
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '60'
+        - name: FILL_PERCENTAGE
+          value: '80'
+        - name: TARGET_CONTAINER
+          value: ''
+
+---
+# Expérience 6: Database Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-database-chaos
+  namespace: database
+spec:
+  appinfo:
+    appns: database
+    applabel: app.kubernetes.io/name=postgresql
+    appkind: statefulset
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-delete
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '30'
+        - name: CHAOS_INTERVAL
+          value: '5'
+        - name: FORCE
+          value: 'false'
+        - name: PODS_AFFECTED_PERC
+          value: '100'
+
+---
+# Expérience 7: Kafka Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-kafka-chaos
+  namespace: kafka
+spec:
+  appinfo:
+    appns: kafka
+    applabel: strimzi.io/cluster=banking-kafka
+    appkind: statefulset
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: pod-delete
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '60'
+        - name: CHAOS_INTERVAL
+          value: '15'
+        - name: FORCE
+          value: 'false'
+        - name: PODS_AFFECTED_PERC
+          value: '33'
+
+---
+# Expérience 8: Node Chaos
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: banking-node-chaos
+  namespace: banking
+spec:
+  appinfo:
+    appns: banking
+    applabel: app=banking-services
+    appkind: deployment
+  chaosServiceAccount: litmus-admin
+  monitoring: true
+  jobCleanUpPolicy: retain
+  experiments:
+  - name: node-cpu-hog
+    spec:
+      components:
+        env:
+        - name: TOTAL_CHAOS_DURATION
+          value: '120'
+        - name: CPU_CORES
+          value: '2'
+        - name: NODES_AFFECTED_PERC
+          value: '50'

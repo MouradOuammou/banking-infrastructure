@@ -1,0 +1,236 @@
+groups:
+  - name: banking.rules
+    rules:
+      # Règles pour Auth Service
+      - alert: AuthServiceDown
+        expr: up{job="auth-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: auth-service
+        annotations:
+          summary: "Auth Service is down"
+          description: "Auth Service has been down for more than 1 minute"
+      
+      - alert: AuthServiceHighErrorRate
+        expr: rate(http_requests_total{job="auth-service",status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: auth-service
+        annotations:
+          summary: "High error rate in Auth Service"
+          description: "Auth Service error rate is {{ $value }} errors per second"
+      
+      - alert: AuthServiceHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="auth-service"}[5m])) > 1
+        for: 3m
+        labels:
+          severity: warning
+          service: auth-service
+        annotations:
+          summary: "High response time in Auth Service"
+          description: "95th percentile response time is {{ $value }} seconds"
+      
+      # Règles pour Accounts Service
+      - alert: AccountsServiceDown
+        expr: up{job="accounts-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: accounts-service
+        annotations:
+          summary: "Accounts Service is down"
+          description: "Accounts Service has been down for more than 1 minute"
+      
+      - alert: AccountsServiceHighErrorRate
+        expr: rate(http_requests_total{job="accounts-service",status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: accounts-service
+        annotations:
+          summary: "High error rate in Accounts Service"
+          description: "Accounts Service error rate is {{ $value }} errors per second"
+      
+      - alert: AccountsServiceHighMemoryUsage
+        expr: (jvm_memory_used_bytes{job="accounts-service",area="heap"} / jvm_memory_max_bytes{job="accounts-service",area="heap"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: accounts-service
+        annotations:
+          summary: "High memory usage in Accounts Service"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+      
+      # Règles pour Transactions Service
+      - alert: TransactionsServiceDown
+        expr: up{job="transactions-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: transactions-service
+        annotations:
+          summary: "Transactions Service is down"
+          description: "Transactions Service has been down for more than 1 minute"
+      
+      - alert: TransactionsServiceHighErrorRate
+        expr: rate(http_requests_total{job="transactions-service",status=~"5.."}[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          service: transactions-service
+        annotations:
+          summary: "High error rate in Transactions Service"
+          description: "Transactions Service error rate is {{ $value }} errors per second"
+      
+      - alert: TransactionsServiceHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="transactions-service"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: transactions-service
+        annotations:
+          summary: "High CPU usage in Transactions Service"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+      
+      # Règles pour Notifications Service
+      - alert: NotificationsServiceDown
+        expr: up{job="notifications-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: notifications-service
+        annotations:
+          summary: "Notifications Service is down"
+          description: "Notifications Service has been down for more than 1 minute"
+      
+      - alert: NotificationsServiceQueueBacklog
+        expr: kafka_consumer_lag_sum{job="notifications-service"} > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: notifications-service
+        annotations:
+          summary: "High message backlog in Notifications Service"
+          description: "Message backlog is {{ $value }} messages"
+      
+      # Règles pour PostgreSQL
+      - alert: PostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL has been down for more than 1 minute"
+      
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "High connection count in PostgreSQL"
+          description: "Connection usage is {{ $value | humanizePercentage }}"
+      
+      - alert: PostgreSQLHighDiskUsage
+        expr: (pg_database_size_bytes / (1024^3)) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "High disk usage in PostgreSQL"
+          description: "Database size is {{ $value }} GB"
+      
+      # Règles pour Kafka
+      - alert: KafkaDown
+        expr: up{job="kafka"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka
+        annotations:
+          summary: "Kafka is down"
+          description: "Kafka has been down for more than 1 minute"
+      
+      - alert: KafkaHighPartitionLag
+        expr: kafka_consumer_lag_sum > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: kafka
+        annotations:
+          summary: "High partition lag in Kafka"
+          description: "Partition lag is {{ $value }} messages"
+      
+      - alert: KafkaHighDiskUsage
+        expr: kafka_log_size_bytes / (1024^3) > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: kafka
+        annotations:
+          summary: "High disk usage in Kafka"
+          description: "Log size is {{ $value }} GB"
+      
+      # Règles pour Angular UI
+      - alert: AngularUIDown
+        expr: up{job="angular-ui"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: angular-ui
+        annotations:
+          summary: "Angular UI is down"
+          description: "Angular UI has been down for more than 1 minute"
+      
+      - alert: AngularUIHighErrorRate
+        expr: rate(nginx_http_requests_total{job="angular-ui",status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: angular-ui
+        annotations:
+          summary: "High error rate in Angular UI"
+          description: "Angular UI error rate is {{ $value }} errors per second"
+      
+      # Règles pour l'infrastructure
+      - alert: HighPodRestartRate
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High pod restart rate"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+      
+      - alert: NodeHighCPUUsage
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on node"
+          description: "CPU usage on node {{ $labels.instance }} is {{ $value }}%"
+      
+      - alert: NodeHighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on node"
+          description: "Memory usage on node {{ $labels.instance }} is {{ $value }}%"
+      
+      - alert: NodeDiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on node"
+          description: "Disk usage on node {{ $labels.instance }} is {{ $value }}%"

@@ -1,0 +1,328 @@
+# Configuration Resilience4J pour l'Infrastructure Bancaire
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resilience4j-config
+  namespace: banking
+data:
+  application.yml: |
+    # Configuration Resilience4J
+    resilience4j:
+      # Circuit Breaker Configuration
+      circuitbreaker:
+        instances:
+          # Circuit breaker pour Auth Service
+          auth-service:
+            registerHealthIndicator: true
+            slidingWindowSize: 10
+            minimumNumberOfCalls: 5
+            permittedNumberOfCallsInHalfOpenState: 3
+            automaticTransitionFromOpenToHalfOpenEnabled: true
+            waitDurationInOpenState: 5s
+            failureRateThreshold: 50
+            eventConsumerBufferSize: 10
+            recordExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+          
+          # Circuit breaker pour Accounts Service
+          accounts-service:
+            registerHealthIndicator: true
+            slidingWindowSize: 10
+            minimumNumberOfCalls: 5
+            permittedNumberOfCallsInHalfOpenState: 3
+            automaticTransitionFromOpenToHalfOpenState: true
+            waitDurationInOpenState: 5s
+            failureRateThreshold: 50
+            eventConsumerBufferSize: 10
+            recordExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+          
+          # Circuit breaker pour Transactions Service
+          transactions-service:
+            registerHealthIndicator: true
+            slidingWindowSize: 10
+            minimumNumberOfCalls: 5
+            permittedNumberOfCallsInHalfOpenState: 3
+            automaticTransitionFromOpenToHalfOpenState: true
+            waitDurationInOpenState: 5s
+            failureRateThreshold: 30
+            eventConsumerBufferSize: 10
+            recordExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+          
+          # Circuit breaker pour Notifications Service
+          notifications-service:
+            registerHealthIndicator: true
+            slidingWindowSize: 10
+            minimumNumberOfCalls: 5
+            permittedNumberOfCallsInHalfOpenState: 3
+            automaticTransitionFromOpenToHalfOpenState: true
+            waitDurationInOpenState: 5s
+            failureRateThreshold: 50
+            eventConsumerBufferSize: 10
+            recordExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+      
+      # Retry Configuration
+      retry:
+        instances:
+          # Retry pour Auth Service
+          auth-service:
+            maxAttempts: 3
+            waitDuration: 1s
+            exponentialBackoffMultiplier: 2
+            retryExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+          
+          # Retry pour Accounts Service
+          accounts-service:
+            maxAttempts: 3
+            waitDuration: 1s
+            exponentialBackoffMultiplier: 2
+            retryExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+          
+          # Retry pour Transactions Service
+          transactions-service:
+            maxAttempts: 5
+            waitDuration: 2s
+            exponentialBackoffMultiplier: 2
+            retryExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+          
+          # Retry pour Notifications Service
+          notifications-service:
+            maxAttempts: 3
+            waitDuration: 1s
+            exponentialBackoffMultiplier: 2
+            retryExceptions:
+              - org.springframework.web.client.HttpServerErrorException
+              - java.util.concurrent.TimeoutException
+              - java.io.IOException
+            ignoreExceptions:
+              - com.banking.exceptions.BusinessException
+      
+      # Timeout Configuration
+      timelimiter:
+        instances:
+          # Timeout pour Auth Service
+          auth-service:
+            timeoutDuration: 5s
+            cancelRunningFuture: true
+          
+          # Timeout pour Accounts Service
+          accounts-service:
+            timeoutDuration: 5s
+            cancelRunningFuture: true
+          
+          # Timeout pour Transactions Service
+          transactions-service:
+            timeoutDuration: 10s
+            cancelRunningFuture: true
+          
+          # Timeout pour Notifications Service
+          notifications-service:
+            timeoutDuration: 5s
+            cancelRunningFuture: true
+      
+      # Bulkhead Configuration
+      bulkhead:
+        instances:
+          # Bulkhead pour Auth Service
+          auth-service:
+            maxConcurrentCalls: 10
+            maxWaitDuration: 1s
+          
+          # Bulkhead pour Accounts Service
+          accounts-service:
+            maxConcurrentCalls: 10
+            maxWaitDuration: 1s
+          
+          # Bulkhead pour Transactions Service
+          transactions-service:
+            maxConcurrentCalls: 5
+            maxWaitDuration: 2s
+          
+          # Bulkhead pour Notifications Service
+          notifications-service:
+            maxConcurrentCalls: 10
+            maxWaitDuration: 1s
+      
+      # Rate Limiter Configuration
+      ratelimiter:
+        instances:
+          # Rate limiter pour Auth Service
+          auth-service:
+            limitForPeriod: 100
+            limitRefreshPeriod: 1s
+            timeoutDuration: 1s
+          
+          # Rate limiter pour Accounts Service
+          accounts-service:
+            limitForPeriod: 100
+            limitRefreshPeriod: 1s
+            timeoutDuration: 1s
+          
+          # Rate limiter pour Transactions Service
+          transactions-service:
+            limitForPeriod: 50
+            limitRefreshPeriod: 1s
+            timeoutDuration: 2s
+          
+          # Rate limiter pour Notifications Service
+          notifications-service:
+            limitForPeriod: 100
+            limitRefreshPeriod: 1s
+            timeoutDuration: 1s
+      
+      # Actuator Configuration
+      actuator:
+        circuitbreakers:
+          enabled: true
+        retries:
+          enabled: true
+        timelimiters:
+          enabled: true
+        bulkheads:
+          enabled: true
+        ratelimiters:
+          enabled: true
+
+---
+# ConfigMap pour les métriques Resilience4J
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resilience4j-metrics-config
+  namespace: banking
+data:
+  metrics.yml: |
+    # Métriques Resilience4J
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus,circuitbreakers,retries,timelimiters,bulkheads,ratelimiters
+      endpoint:
+        health:
+          show-details: always
+        prometheus:
+          enabled: true
+      metrics:
+        export:
+          prometheus:
+            enabled: true
+        distribution:
+          percentiles-histogram:
+            http.server.requests: true
+            http.client.requests: true
+          percentiles:
+            http.server.requests: 0.5, 0.95, 0.99
+            http.client.requests: 0.5, 0.95, 0.99
+          slo:
+            http.server.requests: 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s
+            http.client.requests: 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s
+
+---
+# ConfigMap pour les événements Resilience4J
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resilience4j-events-config
+  namespace: banking
+data:
+  events.yml: |
+    # Configuration des événements Resilience4J
+    logging:
+      level:
+        io.github.resilience4j: DEBUG
+        com.banking: DEBUG
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+    # Configuration des événements
+    resilience4j:
+      circuitbreaker:
+        instances:
+          auth-service:
+            eventConsumerBufferSize: 10
+          accounts-service:
+            eventConsumerBufferSize: 10
+          transactions-service:
+            eventConsumerBufferSize: 10
+          notifications-service:
+            eventConsumerBufferSize: 10
+      
+      retry:
+        instances:
+          auth-service:
+            eventConsumerBufferSize: 10
+          accounts-service:
+            eventConsumerBufferSize: 10
+          transactions-service:
+            eventConsumerBufferSize: 10
+          notifications-service:
+            eventConsumerBufferSize: 10
+      
+      timelimiter:
+        instances:
+          auth-service:
+            eventConsumerBufferSize: 10
+          accounts-service:
+            eventConsumerBufferSize: 10
+          transactions-service:
+            eventConsumerBufferSize: 10
+          notifications-service:
+            eventConsumerBufferSize: 10
+      
+      bulkhead:
+        instances:
+          auth-service:
+            eventConsumerBufferSize: 10
+          accounts-service:
+            eventConsumerBufferSize: 10
+          transactions-service:
+            eventConsumerBufferSize: 10
+          notifications-service:
+            eventConsumerBufferSize: 10
+      
+      ratelimiter:
+        instances:
+          auth-service:
+            eventConsumerBufferSize: 10
+          accounts-service:
+            eventConsumerBufferSize: 10
+          transactions-service:
+            eventConsumerBufferSize: 10
+          notifications-service:
+            eventConsumerBufferSize: 10

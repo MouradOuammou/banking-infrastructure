@@ -1,0 +1,367 @@
+# RBAC Configuration pour l'Infrastructure Bancaire
+
+# ServiceAccount pour les microservices
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-service-account
+  namespace: banking
+  labels:
+    app: banking-services
+---
+# ServiceAccount pour les opérations d'administration
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-admin-account
+  namespace: banking
+  labels:
+    app: banking-admin
+---
+# ServiceAccount pour les développeurs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-dev-account
+  namespace: banking
+  labels:
+    app: banking-dev
+
+---
+# ClusterRole pour les microservices
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: banking-microservice-role
+rules:
+# Permissions pour lire les secrets et configmaps
+- apiGroups: [""]
+  resources: ["secrets", "configmaps"]
+  verbs: ["get", "list", "watch"]
+# Permissions pour les pods (health checks, logs)
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/exec"]
+  verbs: ["get", "list", "watch"]
+# Permissions pour les services
+- apiGroups: [""]
+  resources: ["services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+# Permissions pour les events
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+# ClusterRole pour les administrateurs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: banking-admin-role
+rules:
+# Permissions complètes sur les ressources banking
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["policy"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+# ClusterRole pour les développeurs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: banking-dev-role
+rules:
+# Permissions limitées pour les développeurs
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+
+---
+# ClusterRoleBinding pour les microservices
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: banking-microservice-binding
+subjects:
+- kind: ServiceAccount
+  name: banking-service-account
+  namespace: banking
+roleRef:
+  kind: ClusterRole
+  name: banking-microservice-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ClusterRoleBinding pour les administrateurs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: banking-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: banking-admin-account
+  namespace: banking
+- kind: User
+  name: banking-admin
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: banking-admin-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ClusterRoleBinding pour les développeurs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: banking-dev-binding
+subjects:
+- kind: ServiceAccount
+  name: banking-dev-account
+  namespace: banking
+- kind: User
+  name: banking-dev
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: banking-dev-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Role pour les opérations dans le namespace banking
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: banking
+  name: banking-namespace-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# RoleBinding pour les microservices dans le namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: banking-namespace-binding
+  namespace: banking
+subjects:
+- kind: ServiceAccount
+  name: banking-service-account
+  namespace: banking
+roleRef:
+  kind: Role
+  name: banking-namespace-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# PodSecurityPolicy pour les microservices
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: banking-psp
+  namespace: banking
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+
+---
+# NetworkPolicy pour l'isolation réseau
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: banking-network-policy
+  namespace: banking
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Autoriser le trafic depuis l'ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 8082
+    - protocol: TCP
+      port: 8083
+    - protocol: TCP
+      port: 8084
+    - protocol: TCP
+      port: 4200
+  # Autoriser le trafic inter-services
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: banking
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 8082
+    - protocol: TCP
+      port: 8083
+    - protocol: TCP
+      port: 8084
+  # Autoriser le trafic depuis Prometheus
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 8082
+    - protocol: TCP
+      port: 8083
+    - protocol: TCP
+      port: 8084
+  egress:
+  # Autoriser le trafic vers la base de données
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Autoriser le trafic vers Kafka
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kafka
+    ports:
+    - protocol: TCP
+      port: 9092
+    - protocol: TCP
+      port: 9093
+  # Autoriser le trafic DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Autoriser le trafic HTTPS pour les appels externes
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Autoriser le trafic vers les services de monitoring
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 3000
+
+---
+# PodDisruptionBudget pour la haute disponibilité
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: banking-pdb
+  namespace: banking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: banking-services
+
+---
+# ResourceQuota pour limiter les ressources
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: banking-quota
+  namespace: banking
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    persistentvolumeclaims: "10"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+    pods: "20"
+    replicationcontrollers: "10"
+    resourcequotas: "1"
+
+---
+# LimitRange pour définir les limites par défaut
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: banking-limits
+  namespace: banking
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "250m"
+      memory: "256Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: 4Gi
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container

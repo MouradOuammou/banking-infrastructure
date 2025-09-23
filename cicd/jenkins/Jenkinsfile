@@ -1,0 +1,395 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_REGISTRY = 'localhost:5000'
+        KUBECONFIG = '/var/jenkins_home/.kube/config'
+        SONAR_TOKEN = credentials('sonar-token')
+        DOCKER_CREDENTIALS = credentials('docker-registry')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+                    env.BUILD_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
+                }
+            }
+        }
+        
+        stage('Build Backend Services') {
+            parallel {
+                stage('Build Auth Service') {
+                    steps {
+                        dir('microservices/auth-service') {
+                            sh '''
+                                # Build Maven project
+                                mvn clean compile test package -DskipTests=false
+                                
+                                # Run unit tests
+                                mvn test
+                                
+                                # Generate test report
+                                mvn jacoco:report
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            publishTestResults testResultsPattern: 'microservices/auth-service/target/surefire-reports/*.xml'
+                            publishCoverage adapters: [jacocoAdapter('microservices/auth-service/target/site/jacoco/jacoco.xml')]
+                        }
+                    }
+                }
+                
+                stage('Build Accounts Service') {
+                    steps {
+                        dir('microservices/accounts-service') {
+                            sh '''
+                                mvn clean compile test package -DskipTests=false
+                                mvn test
+                                mvn jacoco:report
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            publishTestResults testResultsPattern: 'microservices/accounts-service/target/surefire-reports/*.xml'
+                            publishCoverage adapters: [jacocoAdapter('microservices/accounts-service/target/site/jacoco/jacoco.xml')]
+                        }
+                    }
+                }
+                
+                stage('Build Transactions Service') {
+                    steps {
+                        dir('microservices/transactions-service') {
+                            sh '''
+                                mvn clean compile test package -DskipTests=false
+                                mvn test
+                                mvn jacoco:report
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            publishTestResults testResultsPattern: 'microservices/transactions-service/target/surefire-reports/*.xml'
+                            publishCoverage adapters: [jacocoAdapter('microservices/transactions-service/target/site/jacoco/jacoco.xml')]
+                        }
+                    }
+                }
+                
+                stage('Build Notifications Service') {
+                    steps {
+                        dir('microservices/notifications-service') {
+                            sh '''
+                                mvn clean compile test package -DskipTests=false
+                                mvn test
+                                mvn jacoco:report
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            publishTestResults testResultsPattern: 'microservices/notifications-service/target/surefire-reports/*.xml'
+                            publishCoverage adapters: [jacocoAdapter('microservices/notifications-service/target/site/jacoco/jacoco.xml')]
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Build Frontend') {
+            steps {
+                dir('frontend/angular-ui') {
+                    sh '''
+                        # Install dependencies
+                        npm ci
+                        
+                        # Run linting
+                        npm run lint
+                        
+                        # Run unit tests
+                        npm run test -- --watch=false --browsers=ChromeHeadless
+                        
+                        # Build application
+                        npm run build --prod
+                    '''
+                }
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'frontend/angular-ui/coverage',
+                        reportFiles: 'index.html',
+                        reportName: 'Angular Coverage Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=banking-infrastructure \
+                                -Dsonar.projectName='Infrastructure Bancaire' \
+                                -Dsonar.projectVersion=${env.BUILD_TAG} \
+                                -Dsonar.sources=microservices,frontend \
+                                -Dsonar.java.binaries=microservices/*/target/classes \
+                                -Dsonar.jacoco.reportPaths=microservices/*/target/site/jacoco/jacoco.xml \
+                                -Dsonar.typescript.lcov.reportPaths=frontend/angular-ui/coverage/lcov.info
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Build Docker Images') {
+            parallel {
+                stage('Build Auth Service Image') {
+                    steps {
+                        dir('microservices/auth-service') {
+                            sh """
+                                docker build -f ../../infrastructure/docker/Dockerfile.auth-service \
+                                    -t ${DOCKER_REGISTRY}/auth-service:${BUILD_TAG} \
+                                    -t ${DOCKER_REGISTRY}/auth-service:latest .
+                                
+                                docker push ${DOCKER_REGISTRY}/auth-service:${BUILD_TAG}
+                                docker push ${DOCKER_REGISTRY}/auth-service:latest
+                            """
+                        }
+                    }
+                }
+                
+                stage('Build Accounts Service Image') {
+                    steps {
+                        dir('microservices/accounts-service') {
+                            sh """
+                                docker build -f ../../infrastructure/docker/Dockerfile.accounts-service \
+                                    -t ${DOCKER_REGISTRY}/accounts-service:${BUILD_TAG} \
+                                    -t ${DOCKER_REGISTRY}/accounts-service:latest .
+                                
+                                docker push ${DOCKER_REGISTRY}/accounts-service:${BUILD_TAG}
+                                docker push ${DOCKER_REGISTRY}/accounts-service:latest
+                            """
+                        }
+                    }
+                }
+                
+                stage('Build Transactions Service Image') {
+                    steps {
+                        dir('microservices/transactions-service') {
+                            sh """
+                                docker build -f ../../infrastructure/docker/Dockerfile.transactions-service \
+                                    -t ${DOCKER_REGISTRY}/transactions-service:${BUILD_TAG} \
+                                    -t ${DOCKER_REGISTRY}/transactions-service:latest .
+                                
+                                docker push ${DOCKER_REGISTRY}/transactions-service:${BUILD_TAG}
+                                docker push ${DOCKER_REGISTRY}/transactions-service:latest
+                            """
+                        }
+                    }
+                }
+                
+                stage('Build Notifications Service Image') {
+                    steps {
+                        dir('microservices/notifications-service') {
+                            sh """
+                                docker build -f ../../infrastructure/docker/Dockerfile.notifications-service \
+                                    -t ${DOCKER_REGISTRY}/notifications-service:${BUILD_TAG} \
+                                    -t ${DOCKER_REGISTRY}/notifications-service:latest .
+                                
+                                docker push ${DOCKER_REGISTRY}/notifications-service:${BUILD_TAG}
+                                docker push ${DOCKER_REGISTRY}/notifications-service:latest
+                            """
+                        }
+                    }
+                }
+                
+                stage('Build Angular UI Image') {
+                    steps {
+                        dir('frontend/angular-ui') {
+                            sh """
+                                docker build -f ../../infrastructure/docker/Dockerfile.angular-ui \
+                                    -t ${DOCKER_REGISTRY}/angular-ui:${BUILD_TAG} \
+                                    -t ${DOCKER_REGISTRY}/angular-ui:latest .
+                                
+                                docker push ${DOCKER_REGISTRY}/angular-ui:${BUILD_TAG}
+                                docker push ${DOCKER_REGISTRY}/angular-ui:latest
+                            """
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                sh """
+                    # Scan des images Docker avec Trivy
+                    trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                        ${DOCKER_REGISTRY}/auth-service:${BUILD_TAG}
+                    
+                    trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                        ${DOCKER_REGISTRY}/accounts-service:${BUILD_TAG}
+                    
+                    trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                        ${DOCKER_REGISTRY}/transactions-service:${BUILD_TAG}
+                    
+                    trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                        ${DOCKER_REGISTRY}/notifications-service:${BUILD_TAG}
+                    
+                    trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                        ${DOCKER_REGISTRY}/angular-ui:${BUILD_TAG}
+                """
+            }
+        }
+        
+        stage('Deploy to Staging') {
+            steps {
+                script {
+                    // Mettre à jour les images dans les manifests Kubernetes
+                    sh """
+                        # Mettre à jour les tags d'images
+                        find infrastructure/kubernetes -name "*.yaml" -exec sed -i "s/:latest/:${BUILD_TAG}/g" {} \\;
+                        
+                        # Appliquer les manifests
+                        kubectl apply -f infrastructure/kubernetes/ -n banking
+                        
+                        # Attendre que les déploiements soient prêts
+                        kubectl rollout status deployment/auth-service -n banking --timeout=300s
+                        kubectl rollout status deployment/accounts-service -n banking --timeout=300s
+                        kubectl rollout status deployment/transactions-service -n banking --timeout=300s
+                        kubectl rollout status deployment/notifications-service -n banking --timeout=300s
+                        kubectl rollout status deployment/angular-ui -n banking --timeout=300s
+                    """
+                }
+            }
+        }
+        
+        stage('Integration Tests') {
+            steps {
+                sh """
+                    # Tests d'intégration avec TestContainers
+                    cd microservices/auth-service
+                    mvn verify -Pintegration-tests
+                    
+                    cd ../accounts-service
+                    mvn verify -Pintegration-tests
+                    
+                    cd ../transactions-service
+                    mvn verify -Pintegration-tests
+                    
+                    cd ../notifications-service
+                    mvn verify -Pintegration-tests
+                """
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: 'microservices/*/target/failsafe-reports/*.xml'
+                }
+            }
+        }
+        
+        stage('Performance Tests') {
+            steps {
+                sh """
+                    # Tests de performance avec JMeter
+                    jmeter -n -t tests/performance/banking-load-test.jmx \
+                        -l tests/performance/results.jtl \
+                        -e -o tests/performance/report
+                """
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'tests/performance/report',
+                        reportFiles: 'index.html',
+                        reportName: 'Performance Test Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    // Déclencher le déploiement Argo CD
+                    sh """
+                        # Créer une application Argo CD si elle n'existe pas
+                        argocd app create banking-app \
+                            --repo https://github.com/MouradOuammou/banking-infrastructure.git \
+                            --path infrastructure/kubernetes \
+                            --dest-server https://kubernetes.default.svc \
+                            --dest-namespace banking \
+                            --sync-policy automated \
+                            --auto-prune \
+                            --self-heal
+                        
+                        # Synchroniser l'application
+                        argocd app sync banking-app
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Nettoyage
+            sh 'docker system prune -f'
+            
+            // Notification
+            script {
+                def status = currentBuild.result ?: 'SUCCESS'
+                def color = status == 'SUCCESS' ? 'good' : 'danger'
+                
+                slackSend(
+                    channel: '#banking-devops',
+                    color: color,
+                    message: "Build ${env.BUILD_NUMBER} - ${status}\n" +
+                            "Commit: ${env.GIT_COMMIT_SHORT}\n" +
+                            "Branch: ${env.BRANCH_NAME}\n" +
+                            "URL: ${env.BUILD_URL}"
+                )
+            }
+        }
+        
+        success {
+            echo '🎉 Pipeline exécuté avec succès!'
+        }
+        
+        failure {
+            echo '❌ Pipeline échoué!'
+        }
+        
+        unstable {
+            echo '⚠️ Pipeline instable!'
+        }
+    }
+}

@@ -1,0 +1,163 @@
+# Tests d'intégration pour l'Infrastructure Bancaire
+
+# Configuration TestContainers
+testcontainers:
+  enabled: true
+  containers:
+    postgresql:
+      image: postgres:13
+      environment:
+        POSTGRES_DB: banking_test
+        POSTGRES_USER: test_user
+        POSTGRES_PASSWORD: test_password
+      ports:
+        - "5432:5432"
+      wait:
+        for: "SELECT 1"
+        timeout: 30s
+    
+    kafka:
+      image: confluentinc/cp-kafka:latest
+      environment:
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ports:
+        - "9092:9092"
+      depends_on:
+        - zookeeper
+      wait:
+        for: "kafka-topics --bootstrap-server localhost:9092 --list"
+        timeout: 60s
+    
+    zookeeper:
+      image: confluentinc/cp-zookeeper:latest
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+      ports:
+        - "2181:2181"
+      wait:
+        for: "nc -z localhost 2181"
+        timeout: 30s
+
+# Configuration des tests
+tests:
+  # Tests d'intégration Auth Service
+  auth-service:
+    class: com.banking.auth.integration.AuthServiceIntegrationTest
+    methods:
+      - testUserLogin
+      - testUserLogout
+      - testTokenValidation
+      - testUserRegistration
+      - testPasswordReset
+      - testRoleBasedAccess
+    database:
+      schema: auth_service_test
+      migrations: classpath:db/migration/auth
+    
+  # Tests d'intégration Accounts Service
+  accounts-service:
+    class: com.banking.accounts.integration.AccountsServiceIntegrationTest
+    methods:
+      - testCreateAccount
+      - testGetAccount
+      - testUpdateAccount
+      - testDeleteAccount
+      - testGetAccountBalance
+      - testAccountHistory
+    database:
+      schema: accounts_service_test
+      migrations: classpath:db/migration/accounts
+    
+  # Tests d'intégration Transactions Service
+  transactions-service:
+    class: com.banking.transactions.integration.TransactionsServiceIntegrationTest
+    methods:
+      - testCreateTransaction
+      - testGetTransaction
+      - testUpdateTransaction
+      - testDeleteTransaction
+      - testTransactionHistory
+      - testTransactionValidation
+    database:
+      schema: transactions_service_test
+      migrations: classpath:db/migration/transactions
+    
+  # Tests d'intégration Notifications Service
+  notifications-service:
+    class: com.banking.notifications.integration.NotificationsServiceIntegrationTest
+    methods:
+      - testSendEmail
+      - testSendSMS
+      - testSendPushNotification
+      - testNotificationHistory
+      - testNotificationTemplates
+    database:
+      schema: notifications_service_test
+      migrations: classpath:db/migration/notifications
+
+# Configuration des mocks
+mocks:
+  external-services:
+    - name: smtp-server
+      port: 1025
+      type: smtp
+    - name: sms-gateway
+      port: 8080
+      type: http
+    - name: push-service
+      port: 8081
+      type: http
+
+# Configuration des données de test
+test-data:
+  users:
+    - username: testuser1
+      password: testpass1
+      email: test1@example.com
+      roles: [USER]
+    - username: testuser2
+      password: testpass2
+      email: test2@example.com
+      roles: [ADMIN]
+  
+  accounts:
+    - accountNumber: "123456789"
+      accountType: CHECKING
+      balance: 1000.00
+      currency: EUR
+    - accountNumber: "987654321"
+      accountType: SAVINGS
+      balance: 5000.00
+      currency: EUR
+  
+  transactions:
+    - fromAccount: "123456789"
+      toAccount: "987654321"
+      amount: 100.00
+      type: TRANSFER
+      status: PENDING
+
+# Configuration des assertions
+assertions:
+  response-time:
+    max: 2000ms
+    avg: 500ms
+  
+  error-rate:
+    max: 1%
+  
+  availability:
+    min: 99.9%
+
+# Configuration des rapports
+reports:
+  format: [html, json, xml]
+  output-dir: target/integration-test-reports
+  include:
+    - test-results
+    - coverage
+    - performance-metrics
+    - error-logs

@@ -1,0 +1,180 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Kafka Monitoring",
+    "tags": ["kafka", "messaging", "banking"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Kafka Cluster Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "kafka_server_brokertopicmetrics_messagesinpersec",
+            "legendFormat": "Messages In/sec"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Messages Out/sec",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "kafka_server_brokertopicmetrics_messagesoutpersec",
+            "legendFormat": "Messages Out/sec"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Consumer Lag",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "kafka_consumer_lag_sum",
+            "legendFormat": "Total Lag"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active Controllers",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "kafka_controller_kafkacontroller_activecontrollercount",
+            "legendFormat": "Active Controllers"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        }
+      },
+      {
+        "id": 5,
+        "title": "Topic Message Rates",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "kafka_server_brokertopicmetrics_messagesinpersec{topic=~\"transactions|notifications|audit-logs\"}",
+            "legendFormat": "{{topic}} - In"
+          },
+          {
+            "expr": "kafka_server_brokertopicmetrics_messagesoutpersec{topic=~\"transactions|notifications|audit-logs\"}",
+            "legendFormat": "{{topic}} - Out"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "Consumer Lag by Topic",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "kafka_consumer_lag{topic=~\"transactions|notifications|audit-logs\"}",
+            "legendFormat": "{{topic}} - {{consumer_group}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 7,
+        "title": "Partition Count",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "kafka_server_brokertopicmetrics_partitioncount{topic=~\"transactions|notifications|audit-logs\"}",
+            "legendFormat": "{{topic}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Partitions",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 8,
+        "title": "Log Size",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "kafka_log_size_bytes{topic=~\"transactions|notifications|audit-logs\"} / (1024^3)",
+            "legendFormat": "{{topic}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "GB",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
