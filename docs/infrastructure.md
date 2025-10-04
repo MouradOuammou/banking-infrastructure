@@ -5,7 +5,7 @@ Documentation complète de l'infrastructure et des processus DevOps de la platef
 ## Architecture Infrastructure
 
 ### Vue d'Ensemble
-\`\`\`
+```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Load Balancer                            │
 │                   (Kubernetes Ingress)                      │
@@ -23,7 +23,7 @@ Documentation complète de l'infrastructure et des processus DevOps de la platef
 │  │ (Databases) │ │ (Messaging) │ │   (Cache)   │           │
 │  └─────────────┘ └─────────────┘ └─────────────┘           │
 └─────────────────────────────────────────────────────────────┘
-\`\`\`
+```
 
 ## Environnements
 
@@ -51,7 +51,7 @@ Documentation complète de l'infrastructure et des processus DevOps de la platef
 ### Images Docker
 
 #### Microservices (Spring Boot)
-\`\`\`dockerfile
+```dockerfile
 # backend/auth-service/Dockerfile
 FROM openjdk:17-jre-slim
 
@@ -71,10 +71,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 
 # Démarrage
 ENTRYPOINT ["java", "-jar", "/app.jar"]
-\`\`\`
+```
 
 #### Frontend (Next.js)
-\`\`\`dockerfile
+```dockerfile
 # Dockerfile
 FROM node:18-alpine AS builder
 
@@ -99,10 +99,10 @@ USER nextjs
 EXPOSE 3000
 
 CMD ["node", "server.js"]
-\`\`\`
+```
 
 ### Docker Compose (Développement)
-\`\`\`yaml
+```yaml
 # docker-compose.yml
 version: '3.8'
 
@@ -157,12 +157,12 @@ services:
 volumes:
   postgres_data:
   redis_data:
-\`\`\`
+```
 
 ## Kubernetes
 
 ### Namespace
-\`\`\`yaml
+```yaml
 # k8s/namespace.yaml
 apiVersion: v1
 kind: Namespace
@@ -171,10 +171,10 @@ metadata:
   labels:
     name: banking-platform
     environment: production
-\`\`\`
+```
 
 ### ConfigMap
-\`\`\`yaml
+```yaml
 # k8s/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -196,10 +196,10 @@ data:
   # Application
   SPRING_PROFILES_ACTIVE: "production"
   LOG_LEVEL: "INFO"
-\`\`\`
+```
 
 ### Secrets
-\`\`\`yaml
+```yaml
 # k8s/secrets.yaml
 apiVersion: v1
 kind: Secret
@@ -213,12 +213,12 @@ data:
   DB_PASSWORD: YmFua2luZ19wYXNzd29yZA==
   JWT_SECRET: c3VwZXItc2VjcmV0LWp3dC1rZXk=
   REDIS_PASSWORD: cmVkaXNfcGFzc3dvcmQ=
-\`\`\`
+```
 
 ### Déploiements
 
 #### Auth Service
-\`\`\`yaml
+```yaml
 # k8s/auth-service.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -284,10 +284,10 @@ spec:
   - port: 8081
     targetPort: 8081
   type: ClusterIP
-\`\`\`
+```
 
 ### Ingress
-\`\`\`yaml
+```yaml
 # k8s/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -332,12 +332,12 @@ spec:
             name: frontend-service
             port:
               number: 3000
-\`\`\`
+```
 
 ## Monitoring
 
 ### Prometheus Configuration
-\`\`\`yaml
+```yaml
 # monitoring/prometheus.yml
 global:
   scrape_interval: 15s
@@ -373,10 +373,10 @@ alerting:
   - static_configs:
     - targets:
       - alertmanager:9093
-\`\`\`
+```
 
 ### Grafana Dashboards
-\`\`\`json
+```json
 {
   "dashboard": {
     "title": "Banking Platform Overview",
@@ -414,10 +414,10 @@ alerting:
     ]
   }
 }
-\`\`\`
+```
 
 ### Alerting Rules
-\`\`\`yaml
+```yaml
 # monitoring/alert_rules.yml
 groups:
 - name: banking-platform
@@ -448,12 +448,12 @@ groups:
     annotations:
       summary: "High number of database connections"
       description: "Database has {{ $value }} active connections"
-\`\`\`
+```
 
 ## CI/CD Pipeline
 
 ### GitHub Actions
-\`\`\`yaml
+```yaml
 # .github/workflows/ci-cd.yml
 name: CI/CD Pipeline
 
@@ -565,12 +565,12 @@ jobs:
         sed -i 's|banking/auth-service:latest|banking/auth-service:${{ github.sha }}|g' k8s/auth-service.yaml
         kubectl apply -f k8s/
         kubectl rollout status deployment/auth-service -n banking-platform
-\`\`\`
+```
 
 ## Sauvegardes
 
 ### Base de Données
-\`\`\`bash
+```bash
 #!/bin/bash
 # scripts/backup-database.sh
 
@@ -589,10 +589,10 @@ for db in "${DATABASES[@]}"; do
 done
 
 echo "Backup completed: $DATE"
-\`\`\`
+```
 
 ### Kubernetes Resources
-\`\`\`bash
+```bash
 #!/bin/bash
 # scripts/backup-k8s.sh
 
@@ -607,12 +607,12 @@ kubectl get configmaps -n banking-platform -o yaml > "$BACKUP_DIR/configmaps_${D
 kubectl get secrets -n banking-platform -o yaml > "$BACKUP_DIR/secrets_${DATE}.yaml"
 
 echo "Kubernetes backup completed: $DATE"
-\`\`\`
+```
 
 ## Sécurité
 
 ### Network Policies
-\`\`\`yaml
+```yaml
 # k8s/network-policy.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -640,10 +640,10 @@ spec:
       port: 53
     - protocol: UDP
       port: 53
-\`\`\`
+```
 
 ### Pod Security Policy
-\`\`\`yaml
+```yaml
 # k8s/pod-security-policy.yaml
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -667,16 +667,16 @@ spec:
     rule: 'RunAsAny'
   fsGroup:
     rule: 'RunAsAny'
-\`\`\`
+```
 
 ## Maintenance
 
 ### Scripts de Maintenance
-\`\`\`bash
+```bash
 #!/bin/bash
 # scripts/maintenance.sh
 
-echo "🔧 Maintenance de la plateforme bancaire"
+echo "Maintenance de la plateforme bancaire"
 
 # 1. Nettoyage des logs anciens
 echo "Nettoyage des logs..."
@@ -698,11 +698,11 @@ kubectl get pods -n banking-platform
 echo "Vérification certificats SSL..."
 kubectl get certificates -n banking-platform
 
-echo "✅ Maintenance terminée"
-\`\`\`
+echo "Maintenance terminée"
+```
 
 ### Monitoring de la Santé
-\`\`\`bash
+```bash
 #!/bin/bash
 # scripts/health-check.sh
 
@@ -711,27 +711,27 @@ FAILED=0
 
 for service in "${SERVICES[@]}"; do
     if curl -f "http://$service/actuator/health" > /dev/null 2>&1; then
-        echo "✅ $service - OK"
+        echo "$service - OK"
     else
-        echo "❌ $service - FAILED"
+        echo "$service - FAILED"
         FAILED=1
     fi
 done
 
 if [ $FAILED -eq 1 ]; then
-    echo "🚨 Certains services sont en échec!"
+    echo "Certains services sont en échec!"
     exit 1
 else
-    echo "✅ Tous les services sont opérationnels"
+    echo "Tous les services sont opérationnels"
 fi
-\`\`\`
+```
 
 ## Troubleshooting
 
 ### Problèmes Courants
 
 #### Services ne Démarrent Pas
-\`\`\`bash
+```bash
 # Vérifier les logs
 kubectl logs -f deployment/auth-service -n banking-platform
 
@@ -740,10 +740,10 @@ kubectl get events -n banking-platform --sort-by='.lastTimestamp'
 
 # Vérifier les ressources
 kubectl describe pod <pod-name> -n banking-platform
-\`\`\`
+```
 
 #### Problèmes de Base de Données
-\`\`\`bash
+```bash
 # Se connecter à PostgreSQL
 kubectl exec -it postgresql-0 -n banking-platform -- psql -U postgres
 
@@ -752,15 +752,15 @@ SELECT * FROM pg_stat_activity;
 
 # Vérifier l'espace disque
 SELECT pg_size_pretty(pg_database_size('auth_db'));
-\`\`\`
+```
 
 #### Problèmes de Performance
-\`\`\`bash
+```bash
 # Métriques CPU/Mémoire
 kubectl top pods -n banking-platform
 
 # Métriques détaillées
 kubectl exec -it <pod-name> -n banking-platform -- top
-\`\`\`
+```
 
 Cette documentation complète couvre tous les aspects de l'infrastructure et du déploiement de la plateforme bancaire SecureBank.

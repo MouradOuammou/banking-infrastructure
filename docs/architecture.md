@@ -6,7 +6,7 @@ La plateforme SecureBank suit une architecture microservices moderne avec sépar
 
 ## Diagramme d'Architecture
 
-\`\`\`
+```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   API Gateway   │    │   Load Balancer │
 │   (Next.js)     │◄──►│   (Ingress)     │◄──►│   (Kubernetes)  │
@@ -32,7 +32,7 @@ La plateforme SecureBank suit une architecture microservices moderne avec sépar
 │ PostgreSQL   │    │     Kafka        │    │     Redis      │
 │ (Databases)  │    │  (Event Bus)     │    │   (Cache)      │
 └──────────────┘    └──────────────────┘    └────────────────┘
-\`\`\`
+```
 
 ## Microservices
 
@@ -147,29 +147,29 @@ Chaque microservice possède sa propre base de données PostgreSQL:
 ### Schémas Principaux
 
 **Auth Service:**
-\`\`\`sql
+```sql
 users (id, username, email, password, roles, created_at)
 roles (id, name, description)
 user_roles (user_id, role_id)
-\`\`\`
+```
 
 **Accounts Service:**
-\`\`\`sql
+```sql
 accounts (id, user_id, account_number, type, balance, status)
 account_transactions (id, account_id, type, amount, description)
-\`\`\`
+```
 
 **Transactions Service:**
-\`\`\`sql
+```sql
 transactions (id, from_account, to_account, amount, type, status)
 transaction_limits (id, user_id, daily_limit, monthly_limit)
-\`\`\`
+```
 
 **Notifications Service:**
-\`\`\`sql
+```sql
 notifications (id, user_id, type, channel, content, status)
 notification_templates (id, name, subject, body, type)
-\`\`\`
+```
 
 ## Sécurité
 

@@ -1,9 +1,35 @@
+# banking-infrastructure
+
+## Overview
+
+Infrastructure bancaire complète basée sur des microservices Spring Boot avec frontend Angular, déployée sur Minikube avec CI/CD automatisé.
+
+---
+
+**Table of Contents**
+* [Vue d'ensemble](#vue-densemble)
+* [Stack Technologique](#stack-technologique)
+* [Architecture des Microservices](#architecture-des-microservices)
+* [Services et Ports](#services-et-ports)
+* [Déploiement](#déploiement)
+* [Monitoring et Observabilité](#monitoring-et-observabilité)
+* [Sécurité](#sécurité)
+* [Tests](#tests)
+* [CI/CD Pipeline](#cicd-pipeline)
+
+---
+
 # Infrastructure Bancaire Automatisée
 
 ## Architecture Microservices Complète
 
+---
+
 ### Vue d'ensemble
+
 Infrastructure bancaire complète basée sur des microservices Spring Boot avec frontend Angular, déployée sur Minikube avec CI/CD automatisé.
+
+---
 
 ### Stack Technologique
 
@@ -24,6 +50,8 @@ Infrastructure bancaire complète basée sur des microservices Spring Boot avec 
 - **CI/CD**: Jenkins + Argo CD (GitOps)
 - **Monitoring**: Prometheus + Grafana
 - **Sécurité**: SonarQube, RBAC, Resilience4J
+
+---
 
 ### Architecture des Microservices
 
@@ -53,6 +81,8 @@ Infrastructure bancaire complète basée sur des microservices Spring Boot avec 
                         └──────────────┘
 ```
 
+---
+
 ### Services et Ports
 
 | Service | Port | Description |
@@ -70,6 +100,8 @@ Infrastructure bancaire complète basée sur des microservices Spring Boot avec 
 | Prometheus | 9090 | Monitoring |
 | Grafana | 3000 | Dashboards |
 
+---
+
 ### Déploiement
 
 #### Prérequis
@@ -82,6 +114,7 @@ Infrastructure bancaire complète basée sur des microservices Spring Boot avec 
 - Angular CLI
 
 #### Installation
+
 ```bash
 # 1. Démarrer Minikube
 minikube start --memory=8192 --cpus=4
@@ -99,12 +132,16 @@ minikube start --memory=8192 --cpus=4
 ./scripts/setup-cicd.sh
 ```
 
+---
+
 ### Monitoring et Observabilité
 
 - **Métriques**: Prometheus collecte les métriques des microservices
 - **Logs**: Centralisés via Fluentd
 - **Tracing**: Distributed tracing avec Jaeger
 - **Dashboards**: Grafana avec dashboards préconfigurés
+
+---
 
 ### Sécurité
 
@@ -114,12 +151,16 @@ minikube start --memory=8192 --cpus=4
 - **Circuit Breaker**: Resilience4J pour la résilience
 - **SonarQube**: Analyse de sécurité du code
 
+---
+
 ### Tests
 
 - **Tests unitaires**: JUnit 5 + Mockito
 - **Tests d'intégration**: TestContainers
 - **Tests de performance**: JMeter
 - **Chaos testing**: Litmus
+
+---
 
 ### CI/CD Pipeline
 
@@ -128,4 +169,3 @@ minikube start --memory=8192 --cpus=4
 3. **Docker Build**: Création des images
 4. **Deploy**: Argo CD GitOps
 5. **Monitoring**: Validation du déploiement
-# banking-infrastructure

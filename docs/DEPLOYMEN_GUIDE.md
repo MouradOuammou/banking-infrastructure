@@ -1,10 +1,10 @@
 # Guide de Déploiement - Infrastructure Bancaire
 
-## 🏦 Vue d'ensemble
+## Vue d'ensemble
 
 Cette infrastructure bancaire complète est basée sur des microservices Spring Boot avec un frontend Angular, déployée sur Minikube avec un pipeline CI/CD automatisé.
 
-##  Déploiement Rapide
+## Déploiement Rapide
 
 ### Prérequis
 - Docker
@@ -20,7 +20,7 @@ Cette infrastructure bancaire complète est basée sur des microservices Spring 
 ./deploy-banking-infrastructure.sh
 ```
 
-##  Architecture
+## Architecture
 
 ### Microservices Backend
 - **Auth Service** (Port 8081): Authentification JWT et gestion des utilisateurs
@@ -47,7 +47,7 @@ Cette infrastructure bancaire complète est basée sur des microservices Spring 
 - **Grafana**: Dashboards et visualisation
 - **AlertManager**: Gestion des alertes
 
-##  Configuration
+## Configuration
 
 ### Variables d'environnement
 ```bash
@@ -73,7 +73,7 @@ Ajoutez ces lignes à votre fichier `/etc/hosts`:
 <MINIKUBE_IP> notifications.banking.local
 ```
 
-##  Accès aux Services
+## Accès aux Services
 
 ### Application
 - **Frontend**: http://banking.local
@@ -89,7 +89,7 @@ Ajoutez ces lignes à votre fichier `/etc/hosts`:
 - **Prometheus**: http://\<MINIKUBE_IP\>:30004
 - **AlertManager**: http://\<MINIKUBE_IP\>:30005
 
-##  Tests
+## Tests
 
 ### Exécution des tests
 ```bash
@@ -103,7 +103,7 @@ Ajoutez ces lignes à votre fichier `/etc/hosts`:
 - **Tests de chaos**: Litmus
 - **Tests de sécurité**: OWASP ZAP + Trivy
 
-##  Sécurité
+## Sécurité
 
 ### Fonctionnalités de sécurité
 - **RBAC**: Rôles et permissions Kubernetes
@@ -116,7 +116,7 @@ Ajoutez ces lignes à votre fichier `/etc/hosts`:
 ### Rotation des secrets
 Les secrets sont automatiquement rotés via un CronJob Kubernetes.
 
-##  Monitoring
+## Monitoring
 
 ### Métriques collectées
 - **Performance**: Temps de réponse, débit, erreurs
@@ -131,7 +131,7 @@ Les secrets sont automatiquement rotés via un CronJob Kubernetes.
 - Resource Usage
 - Security Events
 
-##  CI/CD Pipeline
+## CI/CD Pipeline
 
 ### Étapes du pipeline
 1. **Checkout**: Récupération du code
@@ -147,7 +147,7 @@ Les secrets sont automatiquement rotés via un CronJob Kubernetes.
 - Pull Request
 - Planification (tous les jours à 2h)
 
-##  Maintenance
+## Maintenance
 
 ### Commandes utiles
 ```bash
@@ -176,7 +176,7 @@ kubectl exec -it deployment/postgresql -n database -- pg_dump -U banking_user au
 kubectl get secrets -n banking -o yaml > secrets-backup.yaml
 ```
 
-##  Dépannage
+## Dépannage
 
 ### Problèmes courants
 
@@ -210,7 +210,7 @@ kubectl exec -it banking-kafka-0 -n kafka -- kafka-topics --bootstrap-server loc
 kubectl exec -it banking-kafka-0 -n kafka -- kafka-consumer-groups --bootstrap-server localhost:9092 --list
 ```
 
-##  Évolutivité
+## Évolutivité
 
 ### Scaling horizontal
 ```bash
@@ -224,7 +224,7 @@ kubectl scale deployment auth-service --replicas=3 -n banking
 kubectl patch deployment auth-service -n banking -p '{"spec":{"template":{"spec":{"containers":[{"name":"auth-service","resources":{"limits":{"cpu":"1","memory":"1Gi"}}}]}}}}'
 ```
 
-##  Migration vers le Cloud
+## Migration vers le Cloud
 
 ### Azure AKS
 ```bash
@@ -247,7 +247,7 @@ eksctl create cluster --name banking-eks --region us-west-2 --nodegroup-name ban
 ./deploy-banking-infrastructure.sh
 ```
 
-##  Support
+## Support
 
 ### Documentation
 - [Kubernetes](https://kubernetes.io/docs/)
@@ -260,6 +260,6 @@ eksctl create cluster --name banking-eks --region us-west-2 --nodegroup-name ban
 - **Développeur / Projet individuel**: mouradouammou8@gmail.com  
   *(Ce projet a été entièrement développé et réalisé par une seule personne.)*
 
-## 📄 Licence
+## Licence
 
 MIT License - Voir le fichier LICENSE pour plus de détails.
